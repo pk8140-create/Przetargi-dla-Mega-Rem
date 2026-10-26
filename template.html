@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Przetargi Mega-Rem – zestawienie</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#eef1f3;--panel:#fff;--ink:#1b2733;--mute:#5d6b78;--line:#d3dae0;--steel:#2f5d7c;--red:#f4c7bd;--yel:#f7e3a1;--grn:#cfe5cc;--gry:#dde1e4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#141b22;--panel:#1c252e;--ink:#e6ecf0;--mute:#93a1ad;--line:#33414d;--steel:#7fb2d4;--red:#6b2d25;--yel:#5e4d12;--grn:#27472a;--gry:#2d3740}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#141b22;--panel:#1c252e;--ink:#e6ecf0;--mute:#93a1ad;--line:#33414d;--steel:#7fb2d4;--red:#6b2d25;--yel:#5e4d12;--grn:#27472a;--gry:#2d3740}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:22px;margin:0 0 4px;font-weight:600}
+.sub{color:var(--mute);margin:0 0 16px;max-width:70ch}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:12px}
+label{display:flex;flex-direction:column;gap:3px;color:var(--mute);font-size:12px}
+input,select,button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 8px}
+button{cursor:pointer;background:var(--steel);color:#fff;border-color:var(--steel);font-weight:500}
+button.alt{background:transparent;color:var(--steel)}
+button:focus-visible,input:focus-visible,select:focus-visible,th:focus-visible{outline:2px solid var(--steel);outline-offset:2px}
+.stats{margin-left:auto;color:var(--mute)}
+.wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+table{border-collapse:collapse;width:100%;min-width:980px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{position:sticky;top:0;background:var(--panel);cursor:pointer;white-space:nowrap;font-weight:600;border-bottom:2px solid var(--steel)}
+td.d{white-space:nowrap;font-weight:500}
+.r{background:var(--red)}.y{background:var(--yel)}.g{background:var(--grn)}.x{background:var(--gry);color:var(--mute)}
+.tag{display:inline-block;padding:1px 7px;border:1px solid var(--line);border-radius:10px;font-size:12px;white-space:nowrap}
+.ex td:nth-child(3)::before{content:"PRZYKŁAD ";font-weight:600;color:var(--steel)}
+a{color:var(--steel)}
+.empty{padding:28px;text-align:center;color:var(--mute)}
+#form{display:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;margin-bottom:12px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+#form.open{display:grid}
+.note{color:var(--mute);font-size:12px;margin-top:10px;max-width:90ch}
+</style>
+</head>
+<body>
+<main>
+<h1>Przetargi dla Mega-Rem – zestawienie</h1>
+<p class="sub">Kotły, młyny węglowe, biomasa, AKPiA i obiekty przemysłowe w promieniu od Krakowa. Odległość liczona w linii prostej od siedziby zamawiającego (BZP nie podaje miejsca realizacji).</p>
+<p class="sub" id="meta"></p>
+
+<div class="bar">
+ <label>Szukaj<input id="q" type="search" placeholder="temat, zamawiający, miejsce"></label>
+ <label>Obszar<select id="area"><option value="">Wszystkie</option></select></label>
+ <label>Promień: <b id="rv">500</b> km<input id="rad" type="range" min="50" max="700" step="10" value="500"></label>
+ <button id="add" class="alt">Dodaj przetarg</button>
+ <button id="csv" class="alt">Eksport CSV</button>
+ <span class="stats" id="stats"></span>
+</div>
+
+<form id="form" autocomplete="off">
+ <label>Termin składania ofert<input name="due" type="date" required></label>
+ <label>Temat<input name="title" required></label>
+ <label>Zamawiający<input name="buyer"></label>
+ <label>Miejsce realizacji<input name="place" list="cities" required></label>
+ <label>Termin realizacji<input name="exec" placeholder="np. III–XI 2027"></label>
+ <label>Obszar<select name="area"></select></label>
+ <label>Link do dokumentacji<input name="url" type="url" placeholder="https://"></label>
+ <button type="submit">Zapisz</button>
+</form>
+<datalist id="cities"></datalist>
+
+<div class="wrap"><table>
+<thead><tr id="head"></tr></thead><tbody id="body"></tbody></table>
+<div class="empty" id="empty" hidden>Brak pozycji dla wybranych filtrów. Użyj „Dodaj przetarg”.</div></div>
+
+<p class="note">Portal GK PGE (swpp2) wymaga CAPTCHA, więc nie jest pobierany automatycznie. Pozycje z kolumny „Dokumentacja” pochodzą z BZP i TED; dopisane ręcznie zapisują się tylko w tej przeglądarce. Kolory terminu: czerwony do 3 dni, żółty do 7 dni, zielony powyżej, szary po terminie. Współrzędne miejscowości są przybliżone; nieznane miejsce nie ma odległości.</p>
+</main>
+<script>
+var KR=[50.0647,19.945];
+var C={"Kraków":[50.0647,19.945],"Skawina":[49.975,19.828],"Trzebinia":[50.162,19.471],"Jaworzno":[50.205,19.275],"Katowice":[50.2649,19.0238],"Zabrze":[50.3249,18.7857],"Gliwice":[50.2945,18.6714],"Chorzów":[50.297,18.954],"Łaziska Górne":[50.147,18.842],"Rybnik":[50.0971,18.5463],"Częstochowa":[50.7965,19.1203],"Opole":[50.6751,17.9213],"Wrocław":[51.1079,17.0385],"Bełchatów":[51.3689,19.3566],"Łódź":[51.7592,19.456],"Kielce":[50.8661,20.6286],"Połaniec":[50.439,21.286],"Kozienice":[51.583,21.547],"Rzeszów":[50.0412,21.9991],"Stalowa Wola":[50.582,22.053],"Lublin":[51.2465,22.5684],"Warszawa":[52.2297,21.0122],"Ostrołęka":[53.084,21.574],"Bogatynia":[50.904,14.965],"Poznań":[52.4064,16.9252],"Bydgoszcz":[53.1235,18.0084],"Toruń":[53.0138,18.5984],"Gdańsk":[54.352,18.6466],"Gdynia":[54.5189,18.5305],"Nowe Czarnowo":[53.216,14.465],"Szczecin":[53.4285,14.5528]};
+var AREAS=["Kocioł","Młyn węglowy","Biomasa / współspalanie","Wentylatory / kanały","Elektrofiltr / odżużlacz","Turbina / generator / pompy","Armatura / rurociągi","Elektryka / AKPiA","Obiekty / ciepłownictwo","Dźwignice (UDT)","Laboratorium spawalnicze / NDT","Inne – do oceny"];
+var KEY="mr-przetargi-v2",sk="due",dir=1,rows=[],MAN=[];
+var META=__META__;var AUTO=__DATA__;
+try{MAN=JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){MAN=[]}
+function rebuild(){rows=AUTO.concat(MAN)}rebuild();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(MAN))}catch(e){}}
+function km(p){var c=C[p];if(!c)return null;var R=Math.PI/180,a=(c[0]-KR[0])*R,b=(c[1]-KR[1])*R;
+ var h=Math.sin(a/2)*Math.sin(a/2)+Math.cos(KR[0]*R)*Math.cos(c[0]*R)*Math.sin(b/2)*Math.sin(b/2);return Math.round(2*6371*Math.asin(Math.sqrt(h)))}
+function days(d){var t=new Date();t=new Date(t.getFullYear(),t.getMonth(),t.getDate());var p=d.split("-");return Math.round((new Date(+p[0],p[1]-1,+p[2])-t)/864e5)}
+function cls(n){return n<0?"x":n<=3?"r":n<=7?"y":"g"}
+function esc(s){var d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML}
+var COLS=[["due","Termin ofert"],["days","Dni"],["title","Temat"],["buyer","Zamawiający"],["place","Miejsce realizacji"],["km","Odległość [km]"],["exec","Termin realizacji"],["area","Obszar"],["url","Dokumentacja"],["",""]];
+document.getElementById("head").innerHTML=COLS.map(function(c){return c[0]?'<th tabindex="0" data-k="'+c[0]+'">'+c[1]+'</th>':'<th></th>'}).join("");
+document.querySelectorAll("#head th[data-k]").forEach(function(th){function go(){var k=th.dataset.k;if(sk==k)dir=-dir;else{sk=k;dir=1}render()}th.onclick=go;th.onkeydown=function(e){if(e.key=="Enter")go()}});
+var as=document.getElementById("area"),fa=document.querySelector("[name=area]");
+AREAS.forEach(function(a){as.add(new Option(a,a));fa.add(new Option(a,a))});
+document.getElementById("cities").innerHTML=Object.keys(C).map(function(k){return '<option value="'+k+'">'}).join("");
+function view(){var q=document.getElementById("q").value.toLowerCase(),a=as.value,r=+document.getElementById("rad").value;
+ var v=rows.map(function(x,i){var o=Object.assign({},x);o.i=i;o.days=days(x.due);o.km=(x.km!=null)?x.km:km(x.place);return o}).filter(function(x){
+  if(a&&x.area!=a)return false;if(x.km!=null&&x.km>r)return false;
+  return !q||(x.title+" "+x.buyer+" "+x.place).toLowerCase().indexOf(q)>-1});
+ v.sort(function(p,q2){var A=p[sk],B=q2[sk];if(A==null)A=1e9;if(B==null)B=1e9;return (A>B?1:A<B?-1:0)*dir});return v}
+function render(){var v=view(),b=document.getElementById("body");
+ document.getElementById("rv").textContent=document.getElementById("rad").value;
+ b.innerHTML=v.map(function(x){var u=/^https?:\/\//.test(x.url||"")?'<a href="'+esc(x.url)+'" target="_blank" rel="noopener">Otwórz</a>':'–';
+  return '<tr><td class="d '+cls(x.days)+'">'+esc(x.due.split("-").reverse().join("."))+'</td><td class="d '+cls(x.days)+'">'+(x.days<0?'po terminie':x.days)+'</td><td>'+(x.new?'<span class="tag">nowe</span> ':'')+esc(x.title)+'</td><td>'+esc(x.buyer)+'</td><td>'+esc(x.place)+'</td><td>'+(x.km==null?'brak w słowniku':x.km)+'</td><td>'+esc(x.exec)+'</td><td><span class="tag">'+esc(x.area)+'</span></td><td>'+u+'</td><td>'+(x.i>=AUTO.length?'<button class="alt" data-del="'+(x.i-AUTO.length)+'" aria-label="Usuń pozycję">Usuń</button>':esc(x.src||''))+'</td></tr>'}).join("");
+ document.getElementById("empty").hidden=v.length>0;
+ var u7=v.filter(function(x){return x.days>=0&&x.days<=7}).length;
+ document.getElementById("stats").textContent="Pozycji: "+v.length+" · termin do 7 dni: "+u7;
+ b.querySelectorAll("[data-del]").forEach(function(el){el.onclick=function(){MAN.splice(+el.dataset.del,1);save();rebuild();render()}})}
+["q","area","rad"].forEach(function(id){document.getElementById(id).oninput=render});
+document.getElementById("add").onclick=function(){document.getElementById("form").classList.toggle("open")};
+document.getElementById("form").onsubmit=function(e){e.preventDefault();var f=e.target,o={};["due","title","buyer","place","exec","area","url"].forEach(function(k){o[k]=f.elements[k].value});
+ MAN.push(o);save();rebuild();f.reset();f.classList.remove("open");render()};
+document.getElementById("csv").onclick=function(){var h=["Termin ofert","Temat","Zamawiający","Miejsce","Odległość km","Termin realizacji","Obszar","Link"];
+ var l=[h].concat(view().map(function(x){return [x.due,x.title,x.buyer,x.place,x.km==null?"":x.km,x.exec,x.area,x.url]}));
+ var s="\ufeff"+l.map(function(r){return r.map(function(c){return '"'+String(c==null?"":c).replace(/"/g,'""')+'"'}).join(";")}).join("\r\n");
+ var a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(s);a.download="przetargi.csv";a.click()};
+document.getElementById("meta").textContent="Aktualizacja: "+META.updated+" · "+META.status;
+render();
+</script>
+</body>
+</html>
